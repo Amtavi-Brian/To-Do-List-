@@ -9,6 +9,7 @@ from app.schemas import (
     TodoPatch,
     TodoResponse
 )
+from app.services import todo_service
 
 
 router = APIRouter(
@@ -27,16 +28,7 @@ def create_todo(
     db: Session = Depends(get_db)
 ):
 
-    new_todo = Todo(
-        title=todo.title,
-        completed=todo.completed
-    )
-
-    db.add(new_todo)
-    db.commit()
-    db.refresh(new_todo)
-
-    return new_todo
+    return todo_service.create_todo(db, todo)
 
 
 @router.get(
@@ -50,14 +42,12 @@ def get_todos(
     db: Session = Depends(get_db)
 ):
 
-    query = db.query(Todo)
-
-    if completed is not None:
-        query = query.filter(Todo.completed == completed)
-
-    todos = query.offset(skip).limit(limit).all()
-
-    return todos
+    return todo_service.get_all_todos(
+        db,
+        completed,
+        skip,
+        limit
+    )
 
 
 @router.get(
@@ -69,11 +59,7 @@ def get_todo(
     db: Session = Depends(get_db)
 ):
 
-    todo = (
-        db.query(Todo)
-        .filter(Todo.id == todo_id)
-        .first()
-    )
+    todo = todo_service.get_todo(db, todo_id)
 
     if todo is None:
         raise HTTPException(
@@ -82,7 +68,6 @@ def get_todo(
         )
 
     return todo
-
 
 @router.put(
     "/{todo_id}",
@@ -94,25 +79,19 @@ def update_todo(
     db: Session = Depends(get_db)
 ):
 
-    existing_todo = (
-        db.query(Todo)
-        .filter(Todo.id == todo_id)
-        .first()
+    updated_todo = todo_service.update_todo(
+        db,
+        todo_id,
+        todo
     )
 
-    if existing_todo is None:
+    if updated_todo is None:
         raise HTTPException(
             status_code=404,
             detail="Todo not found"
         )
 
-    existing_todo.title = todo.title
-    existing_todo.completed = todo.completed
-
-    db.commit()
-    db.refresh(existing_todo)
-
-    return existing_todo
+    return updated_todo
 
 
 @router.patch(
@@ -125,53 +104,39 @@ def patch_todo(
     db: Session = Depends(get_db)
 ):
 
-    existing_todo = (
-        db.query(Todo)
-        .filter(Todo.id == todo_id)
-        .first()
+    updated_todo = todo_service.patch_todo(
+        db,
+        todo_id,
+        todo
     )
 
-    if existing_todo is None:
+    if updated_todo is None:
         raise HTTPException(
             status_code=404,
             detail="Todo not found"
         )
 
-    update_data = todo.model_dump(
-        exclude_unset=True
-    )
-
-    for field, value in update_data.items():
-        setattr(existing_todo, field, value)
-
-    db.commit()
-    db.refresh(existing_todo)
-
-    return existing_todo
+    return updated_todo
 
 
-@router.delete(
-    "/{todo_id}"
-)
+
+
+@router.delete("/{todo_id}")
 def delete_todo(
     todo_id: int,
     db: Session = Depends(get_db)
 ):
 
-    todo = (
-        db.query(Todo)
-        .filter(Todo.id == todo_id)
-        .first()
+    deleted = todo_service.delete_todo(
+        db,
+        todo_id
     )
 
-    if todo is None:
+    if not deleted:
         raise HTTPException(
             status_code=404,
             detail="Todo not found"
         )
-
-    db.delete(todo)
-    db.commit()
 
     return {
         "message": "Todo deleted successfully"
