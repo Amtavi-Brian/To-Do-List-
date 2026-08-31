@@ -15,3 +15,13 @@ class TodoResponse(BaseModel):
 
     class Config: 
         from_attributes = True
+
+
+class TodoPatch(BaseModel):
+    title: str | None = Field(
+        default= None,
+        min_length=3,
+        max_length=100
+    )
+
+    completed: bool | None = None

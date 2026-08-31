@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 from database import engine, Base, get_db
 from models import Todo
-from schemas import TodoCreate, TodoUpdate, TodoResponse
+from schemas import TodoCreate, TodoUpdate, TodoResponse, TodoPatch
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -83,3 +84,32 @@ def delete_todo(todo_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Todo deleted successfully"}
+
+@app.patch(
+    "/todos/{todo_id}",
+    response_model=TodoResponse,
+    status_code=200
+)
+def patch_todo(
+    todo_id: int,
+    todo: TodoPatch,
+    db: Session = Depends(get_db)
+):
+    existing_todo = (
+        db.query(Todo)
+        .filter(Todo.id == todo_id).first()
+    )
+
+    if existing_todo is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Todo not found"
+        )
+    update_data =todo.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(existing_todo, field, value)
+    db.commit()
+    db.refresh(existing_todo)
+    return existing_todo
+
