@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from database import engine, Base, get_db
 from models import Todo
-from schemas import TodoCreate, TodoUpdate
+from schemas import TodoCreate, TodoUpdate, TodoResponse
 
 Base.metadata.create_all(bind=engine)
 
@@ -15,7 +15,10 @@ def home():
     return {"message": "Todo API is running"}
 
 
-@app.post("/todos")
+@app.post(
+        "/todos",
+        response_model=TodoResponse,
+        status_code=201)
 def create_todo(todo: TodoCreate, db: Session = Depends(get_db)):
 
     new_todo = Todo(
@@ -30,13 +33,13 @@ def create_todo(todo: TodoCreate, db: Session = Depends(get_db)):
     return new_todo
 
 
-@app.get("/todos")
+@app.get("/todos", response_model=list[TodoResponse])
 def get_todos(db: Session = Depends(get_db)):
     todos = db.query(Todo).all()
     return todos
 
 
-@app.get("/todos/{todo_id}")
+@app.get("/todos/{todo_id}", response_model=TodoResponse)
 def get_todo(todo_id: int, db: Session = Depends(get_db)):
     todo = db.query(Todo).filter(Todo.id == todo_id).first()
     if todo is None:
@@ -47,7 +50,7 @@ def get_todo(todo_id: int, db: Session = Depends(get_db)):
     return todo
 
 
-@app.put("/todos/{todo_id}")
+@app.put("/todos/{todo_id}", response_model=TodoResponse, status_code=200)
 def update_todo(
     todo_id: int,
     todo: TodoUpdate,
