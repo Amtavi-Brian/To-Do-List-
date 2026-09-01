@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from datetime import datetime
 
 class TodoCreate(BaseModel):
     title: str = Field(min_length=3, max_length=100)
@@ -12,6 +13,7 @@ class TodoResponse(BaseModel):
     id: int
     title: str
     completed: bool
+    created_at: datetime
 
     class Config: 
         from_attributes = True
@@ -25,3 +27,4 @@ class TodoPatch(BaseModel):
     )
 
     completed: bool | None = None
+    
