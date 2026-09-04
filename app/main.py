@@ -1,11 +1,7 @@
 from fastapi import FastAPI
 
-from app.database import engine, Base
 from app.routers import todos
-import app.models
-
-
-Base.metadata.create_all(bind=engine)
+from app.auth.router import router as auth_router
 
 
 app = FastAPI(
@@ -13,12 +9,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-
 app.include_router(todos.router)
+app.include_router(auth_router)
 
 
 @app.get("/")
 def home():
-    return {
-        "message": "Todo API is running"
-    }
+    return {"message": "Todo API is running"}
