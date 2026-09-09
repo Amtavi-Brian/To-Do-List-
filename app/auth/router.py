@@ -28,3 +28,24 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         )
 
     return new_user
+
+@router.post("/login", response_model=Token)
+def login(
+    user: UserLogin,
+    db: Session = Depends(get_db)
+
+):
+    authenticate_user = user_service.authenticate_user(db, user.email, user.password) 
+
+    if authenticate_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+
+    access_token = create_access_token(
+        {
+            "sub": authenticate_user.email
+        }
+    )
+    return {"access_token": access_token, "token_type": "bearer"}

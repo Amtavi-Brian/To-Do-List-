@@ -10,6 +10,8 @@ from app.schemas import (
     TodoResponse
 )
 from app.services import todo_service
+from app.auth.security import get_current_user
+from app.models import User
 
 
 router = APIRouter(
@@ -25,7 +27,8 @@ router = APIRouter(
 )
 def create_todo(
     todo: TodoCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
 
     return todo_service.create_todo(db, todo)
@@ -39,7 +42,8 @@ def get_todos(
     completed: bool | None = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
 
     return todo_service.get_all_todos(
