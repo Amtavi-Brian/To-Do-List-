@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import User
-
+from datetime import datetime, timedelta, timezone
 
 password_hash = PasswordHash.recommended()
 
@@ -29,20 +29,29 @@ SECRET_KEY = "change-this-secret-key"
 ALGORITHM = "HS256"
 
 
-def create_access_token(data: dict) -> str:
+def create_access_token(
+    data: dict,
+    expires_delta: timedelta | None = None
+) -> str:
     to_encode = data.copy()
 
-    token = jwt.encode(
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=30)
+
+    to_encode.update({
+        "exp": expire
+    })
+
+    return jwt.encode(
         to_encode,
         SECRET_KEY,
         algorithm=ALGORITHM
     )
 
-    return token
-
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="auth/login"
-
 )
 def get_current_user(
     token: str = Depends(oauth2_scheme),
