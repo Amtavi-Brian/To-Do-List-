@@ -5,11 +5,12 @@ from app.schemas import TodoCreate, TodoUpdate, TodoPatch
 
 
 #Adding a new Todo
-def create_todo(db: Session, todo: TodoCreate):
+def create_todo(db: Session, todo: TodoCreate, user_id: int):
 
     new_todo = Todo(
         title=todo.title,
-        completed=todo.completed
+        completed=todo.completed,
+        user_id=user_id
     )
 
     db.add(new_todo)
@@ -34,17 +35,27 @@ def get_all_todos(
     return query.offset(skip).limit(limit).all()
 
 # Retrieving specific Todo from the database
-def get_todo(db: Session, todo_id: int):
+def get_todo(
+    db: Session,
+    todo_id: int,
+    user_id: int
+):
     return (
-        db.query(Todo).filter(Todo.id == todo_id).first()
+        db.query(Todo)
+        .filter(
+            Todo.id == todo_id,
+            Todo.user_id == user_id
+        )
+        .first()
     )
 # Updating the Todo in the database
 def update_todo(
         db: Session,
         todo_id: int,
-        todo_update: TodoUpdate | TodoPatch
+        todo_update: TodoUpdate | TodoPatch,
+        user_id: int
 ):
-    existing_todo = get_todo(db, todo_id)
+    existing_todo = get_todo(db, todo_id, user_id)
 
     if existing_todo is None:
         return None
@@ -59,34 +70,50 @@ def update_todo(
 def patch_todo(
     db: Session,
     todo_id: int,
-    todo: TodoPatch
+    todo: TodoPatch,
+    user_id: int
 ):
-
-    existing_todo = get_todo(db, todo_id)
+    existing_todo = (
+        db.query(Todo)
+        .filter(
+            Todo.id == todo_id,
+            Todo.user_id == user_id
+        )
+        .first()
+    )
 
     if existing_todo is None:
         return None
 
-    update_data = todo.model_dump(
-        exclude_unset=True
-    )
+    if todo.title is not None:
+        existing_todo.title = todo.title
 
-    for field, value in update_data.items():
-        setattr(existing_todo, field, value)
+    if todo.completed is not None:
+        existing_todo.completed = todo.completed
 
     db.commit()
     db.refresh(existing_todo)
 
     return existing_todo
 # Deleting the Todo from the database
-def delete_todo(db: Session, todo_id: int):
-
-    existing_todo = get_todo(db, todo_id)
+def delete_todo(
+    db: Session,
+    todo_id: int,
+    user_id: int
+):
+    existing_todo = (
+        db.query(Todo)
+        .filter(
+            Todo.id == todo_id,
+            Todo.user_id == user_id
+        )
+        .first()
+    )
 
     if existing_todo is None:
-        return False
+        return None
 
     db.delete(existing_todo)
     db.commit()
 
-    return True
+    return existing_todo

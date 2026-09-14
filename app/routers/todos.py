@@ -31,7 +31,7 @@ def create_todo(
     current_user: User = Depends(get_current_user)
 ):
 
-    return todo_service.create_todo(db, todo)
+    return todo_service.create_todo(db, todo, current_user.id)
 
 
 @router.get(
@@ -54,16 +54,17 @@ def get_todos(
     )
 
 
-@router.get(
-    "/{todo_id}",
-    response_model=TodoResponse
-)
+@router.get("/{todo_id}", response_model=TodoResponse)
 def get_todo(
     todo_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-
-    todo = todo_service.get_todo(db, todo_id)
+    todo = todo_service.get_todo(
+        db,
+        todo_id,
+        current_user.id
+    )
 
     if todo is None:
         raise HTTPException(
@@ -80,13 +81,15 @@ def get_todo(
 def update_todo(
     todo_id: int,
     todo: TodoUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
 
     updated_todo = todo_service.update_todo(
         db,
         todo_id,
-        todo
+        todo,
+        current_user.id
     )
 
     if updated_todo is None:
@@ -98,20 +101,18 @@ def update_todo(
     return updated_todo
 
 
-@router.patch(
-    "/{todo_id}",
-    response_model=TodoResponse
-)
+@router.patch("/{todo_id}", response_model=TodoResponse)
 def patch_todo(
     todo_id: int,
     todo: TodoPatch,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-
     updated_todo = todo_service.patch_todo(
         db,
         todo_id,
-        todo
+        todo,
+        current_user.id
     )
 
     if updated_todo is None:
@@ -124,24 +125,22 @@ def patch_todo(
 
 
 
-
-@router.delete("/{todo_id}")
+@router.delete("/{todo_id}", response_model=TodoResponse)
 def delete_todo(
     todo_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-
-    deleted = todo_service.delete_todo(
+    deleted_todo = todo_service.delete_todo(
         db,
-        todo_id
+        todo_id,
+        current_user.id
     )
 
-    if not deleted:
+    if deleted_todo is None:
         raise HTTPException(
             status_code=404,
             detail="Todo not found"
         )
 
-    return {
-        "message": "Todo deleted successfully"
-    }
+    return deleted_todo
