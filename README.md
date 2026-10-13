@@ -301,4 +301,4 @@ This project represents my ongoing journey in backend development, REST API desi
 
 ## 📄 License
 
-No license has been specified yet. Add a `LICENSE` file if you decide to distribute the project under an open-source license.
+No lincense
